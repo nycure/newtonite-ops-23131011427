@@ -86,7 +86,10 @@ async def get_demo_users(db: AsyncSession = Depends(get_db)):
             "name": u.name,
             "email": u.email,
             "roles": [
-                {"team": m.team.name if m.team else f"Team {m.team_id}", "role": m.role.value}
+                {
+                    "team": m.team.name if m.team else f"Team {m.team_id}",
+                    "role": m.role.value if hasattr(m.role, "value") else str(m.role),
+                }
                 for m in u.memberships
             ],
         }

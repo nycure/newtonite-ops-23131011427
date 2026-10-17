@@ -48,7 +48,7 @@ async def list_team_members(
             "id": m.user.id,
             "name": m.user.name,
             "email": m.user.email,
-            "role": m.role.value,
+            "role": m.role.value if hasattr(m.role, "value") else str(m.role),
         }
         for m in memberships
     ]
