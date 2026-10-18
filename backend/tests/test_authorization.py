@@ -62,3 +62,8 @@ async def test_resource_level_authorization(client: AsyncClient, seed_test_data,
     charlie_claim = await client.post(f"/api/items/{item_id}/claim", headers=charlie_headers)
     assert charlie_claim.status_code == 403
     assert "viewers cannot" in charlie_claim.json()["detail"].lower()
+
+    # 7. Owen (Outsider) attempts to list members of unauthorized team -> 403 Forbidden
+    owen_team = await client.get(f"/api/teams/{team.id}/members", headers=owen_headers)
+    assert owen_team.status_code == 403
+    assert "access" in owen_team.json()["detail"].lower()

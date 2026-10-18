@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -35,6 +35,13 @@ async def list_team_members(
     db: AsyncSession = Depends(get_db),
 ):
     """Lists members belonging to a team."""
+    user_team_ids = [m.team_id for m in current_user.memberships]
+    if team_id not in user_team_ids:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to view members of this team.",
+        )
+
     stmt = (
         select(TeamMembership)
         .options(selectinload(TeamMembership.user))
