@@ -184,6 +184,7 @@ async def create_work_item(
     db: AsyncSession,
     data: WorkItemCreate,
     creator_id: int,
+    auto_commit: bool = True,
 ) -> WorkItem:
     """Creates a work item with audit trail and outbox event in a single atomic transaction."""
     role = await get_user_team_role(db, creator_id, data.team_id)
@@ -237,7 +238,10 @@ async def create_work_item(
             payload={"work_item_id": item.id, "assignee_id": item.assignee_id, "action": "assigned"},
         )
 
-    await db.commit()
+    if auto_commit:
+        await db.commit()
+    else:
+        await db.flush()
     return await get_work_item_or_404(db, item.id, creator_id)
 
 
@@ -325,6 +329,7 @@ async def update_work_item_optimistic(
     item_id: int,
     data: WorkItemUpdate,
     user_id: int,
+    auto_commit: bool = True,
 ) -> WorkItem:
     """
     Updates work item with optimistic locking check.
@@ -407,7 +412,10 @@ async def update_work_item_optimistic(
         payload={"work_item_id": item_id, "action": "updated", "actor_id": user_id},
     )
 
-    await db.commit()
+    if auto_commit:
+        await db.commit()
+    else:
+        await db.flush()
     return await get_work_item_or_404(db, item_id, user_id)
 
 

@@ -156,8 +156,8 @@ async def create_new_work_item(
             status_code, body = cached
             return JSONResponse(status_code=status_code, content=body)
 
-    # 2. Create work item
-    item = await create_work_item(db=db, data=payload, creator_id=current_user.id)
+    # 2. Create work item inside current transaction without committing prematurely
+    item = await create_work_item(db=db, data=payload, creator_id=current_user.id, auto_commit=False)
     serialized = serialize_work_item_detail(item)
 
     # 3. Store idempotency key if provided
@@ -171,7 +171,9 @@ async def create_new_work_item(
             response_code=status.HTTP_201_CREATED,
             response_body=serialized,
         )
-        await db.commit()
+
+    # 4. Commit item, activity log, outbox job, and idempotency key in a single ACID transaction
+    await db.commit()
 
     return serialized
 
@@ -219,6 +221,7 @@ async def update_work_item(
         item_id=item_id,
         data=payload,
         user_id=current_user.id,
+        auto_commit=False,
     )
     serialized = serialize_work_item_detail(item)
 
@@ -232,7 +235,8 @@ async def update_work_item(
             response_code=status.HTTP_200_OK,
             response_body=serialized,
         )
-        await db.commit()
+
+    await db.commit()
 
     return serialized
 
