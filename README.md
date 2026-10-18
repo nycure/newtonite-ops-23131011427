@@ -1,6 +1,6 @@
 # Newtonite Ops — Operations Under Pressure
 
-[![Automated Tests](https://img.shields.io/badge/tests-6%20passed-emerald)](file:///e:/Antigravity_workspace/Newtonite_project/backend/tests)
+[![Automated Tests](https://img.shields.io/badge/tests-8%20passed-emerald)](file:///e:/Antigravity_workspace/Newtonite_project/backend/tests)
 [![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-teal.svg)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18+-cyan.svg)](https://react.dev/)
@@ -119,22 +119,28 @@ The database is pre-seeded with multiple users across distinct roles and teams. 
 
 ## 🧪 How to Run Automated Tests
 
-Run the complete behavioral test suite with a single command:
+Run the complete behavioral test suite with a single command from the project root:
 
 ```bash
+# Windows (One-command runner):
+.\run_tests.bat
+
+# Linux / macOS (One-command runner):
+./run_tests.sh
+
+# Or directly using the backend venv:
 cd backend
-venv\Scripts\pytest -v
-# or on Linux/macOS:
-# pytest -v
+venv\Scripts\pytest -v      # Windows
+# pytest -v                 # Linux / macOS
 ```
 
 ### Verified Test Cases:
 1. `tests/test_concurrency.py`: Fires two parallel claims on the same unassigned item via `asyncio.gather`. Exactly one succeeds (200 OK), and the second receives a **409 Conflict**.
 2. `tests/test_optimistic_locking.py`: Stale version updates are rejected with **409 Conflict** and the current state is returned without data corruption.
-3. `tests/test_idempotency.py`: Replaying requests with the same `Idempotency-Key` header prevents duplicate creation and returns the cached response. Replaying with tampered payload triggers **422 Unprocessable Entity**.
+3. `tests/test_idempotency.py`: Replaying requests with the same `Idempotency-Key` header prevents duplicate creation and returns the cached response in a single atomic transaction. Replaying with tampered payload triggers **422 Unprocessable Entity**.
 4. `tests/test_workflow.py`: Enforces state transitions. Invalid jumps (e.g. `Open` $\rightarrow$ `Closed`) return **400 Bad Request**. Approval to `Resolved` attempted by a non-Lead is rejected with **403 Forbidden**, but succeeds when attempted by a `Lead`.
-5. `tests/test_authorization.py`: Multi-tenant isolation. External users get **403 Forbidden** on reads and writes; `Viewer` roles are blocked from modifying items.
-6. `tests/test_outbox.py`: Verifies the Transactional Outbox pattern commits events in the same ACID transaction and the background worker processes retries with backoff.
+5. `tests/test_authorization.py`: Multi-tenant isolation. External users get **403 Forbidden** on reads, writes, and team member listings; `Viewer` roles are blocked from modifying items.
+6. `tests/test_outbox.py`: Verifies the Transactional Outbox pattern commits events in the same ACID transaction, the background worker processes retries with exponential backoff, caps at `max_attempts`, and validates idempotent handler execution.
 
 ---
 
